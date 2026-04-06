@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jornada do Herói v4</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+
+<style>
+*{box-sizing:border-box}
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top, #020617, #000);
+  color: white;
+}
+
+.container { max-width:700px; margin:auto; padding:16px }
+
+h1 { text-align:center }
+
+.panel {
+  background:#020617;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:10px;
+  border:1px solid #1e293b;
+  text-align:center;
+}
+
+.progress-bar {
+  height:10px;
+  background:#1e293b;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:5px;
+}
+
+.progress-fill {
+  height:100%;
+  width:0%;
+  background:#22c55e;
+  transition:0.3s;
+}
+
+.level {
+  margin-bottom:12px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #1e293b;
+  transition:0.3s;
+}
+
+.level.unlocked { box-shadow:0 0 10px #22c55e55 }
+.level.locked { opacity:0.2 }
+
+.level-header {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.level img {
+  width:50px;
+  height:50px;
+  border-radius:10px;
+}
+
+.task { display:flex; margin:5px 0 }
+.task input { margin-right:8px }
+
+input.task-text {
+  background:transparent;
+  border:none;
+  border-bottom:1px solid #1e293b;
+  color:white;
+  width:100%;
+}
+
+.achievement { font-size:12px; color:#22c55e }
+
+/* animação */
+@keyframes pop {
+  0% { transform:scale(1); }
+  50% { transform:scale(1.2); }
+  100% { transform:scale(1); }
+}
+
+.pop { animation: pop 0.3s ease }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎮 Jornada do Herói</h1>
+
+  <div class="panel">Missões restantes: <b id="count"></b></div>
+  <div class="panel">🔥 Streak: <b id="streak"></b></div>
+  <div class="panel">
+    XP: <b id="xp"></b>
+    <div class="progress-bar"><div id="bar" class="progress-fill"></div></div>
+  </div>
+
+  <div id="achievements"></div>
+  <div id="levels"></div>
+</div>
+
+<script>
+const levelNames = [
+"Aprendiz Perdido","Explorador do Caos","Caçador de Hábitos","Guardião da Disciplina","Mestre do Foco","Domador do Tempo","Guerreiro da Rotina","Estrategista Supremo","Lorde da Produtividade","Arquiteto do Dia",
+"Conquistador Mental","Sábio das Metas","Mago da Consistência","Titã do Progresso","General da Execução","Rei do Controle","Lenda Viva","Entidade do Hábito","Deus da Disciplina","Forma Final",
+"Renascido do Zero","Andarilho do Tempo","Executor Implacável","Mestre da Clareza","Forjador de Rotinas","Sentinela do Progresso","Comandante da Ordem","Dominador do Caos","Arquiteto Supremo","Visionário da Disciplina",
+"Ascendente Mental","Engenheiro do Foco","Guardião do Ritmo","Mestre da Persistência","Conquistador do Amanhã","Soberano da Consistência","Titã da Execução","Imperador da Rotina","Entidade Suprema","Além da Forma Final"
+];
+
+// imagens simples (pode trocar depois)
+const levelImages = Array.from({length:40}, (_,i)=>`https://picsum.photos/seed/${i}/60`);
+
+const levelsData = levelNames.map((name,i)=>({ name, img: levelImages[i] }));
+
+let state;
+try {
+  state = JSON.parse(localStorage.getItem("gameState")) || {};
+} catch { state = {}; }
+
+state = {
+  tasks: state.tasks || {},
+  texts: state.texts || {},
+  counter: state.counter || 0,
+  lastDate: state.lastDate || null,
+  streak: state.streak || 0,
+  xp: state.xp || 0,
+  achievements: state.achievements || []
+};
+
+function today(){ return new Date().toDateString(); }
+
+function updateDaily(){
+  if(state.lastDate !== today()){
+    const y = new Date(); y.setDate(y.getDate()-1);
+    state.streak = (state.lastDate === y.toDateString()) ? state.streak+1 : 1;
+    state.lastDate = today();
+    const d = new Date().getDay();
+    state.counter += (d===0 ? 7 : 3);
+  }
+}
+
+function save(){ localStorage.setItem("gameState", JSON.stringify(state)); }
+
+function tasksPerLevel(i){ return (i%2===0)?12:13 }
+
+function isComplete(i){
+  for(let t=0;t<tasksPerLevel(i);t++){
+    if(!state.tasks[`${i}-${t}`]) return false;
+  }
+  return true;
+}
+
+function gainXP(){
+  state.xp++;
+  if(state.xp % 50 === 0) unlockAchievement("Disciplina crescente");
+}
+
+function unlockAchievement(name){
+  if(!state.achievements.includes(name)) state.achievements.push(name);
+}
+
+function renderAchievements(){
+  const div = document.getElementById("achievements");
+  div.innerHTML = state.achievements.map(a=>`<div class='achievement'>🏆 ${a}</div>`).join("");
+}
+
+function render(){
+  const container = document.getElementById("levels");
+  container.innerHTML="";
+
+  levelsData.forEach((lvlData,i)=>{
+    const lvl = document.createElement("div");
+    lvl.className = "level";
+
+    const unlocked = i===0 || isComplete(i-1);
+    if(!unlocked) lvl.classList.add("locked");
+    else lvl.classList.add("unlocked");
+
+    lvl.innerHTML = `
+      <div class="level-header">
+        <img src="${lvlData.img}">
+        <b>${lvlData.name}</b>
+      </div>
+    `;
+
+    for(let t=0;t<tasksPerLevel(i);t++){
+      const id = `${i}-${t}`;
+
+      const task = document.createElement("div");
+      task.className="task";
+
+      const check = document.createElement("input");
+      check.type="checkbox";
+      check.checked = state.tasks[id]||false;
+      check.disabled = !unlocked;
+
+      check.onchange=()=>{
+        state.tasks[id]=check.checked;
+        state.counter += check.checked?-1:1;
+
+        if(check.checked){
+          gainXP();
+          check.classList.add("pop");
+          setTimeout(()=>check.classList.remove("pop"),300);
+        }
+
+        save(); updateUI();
+      }
+
+      const input = document.createElement("input");
+      input.className="task-text";
+      input.placeholder="Digite sua missão";
+      input.value = state.texts[id]||"";
+      input.oninput=()=>{
+        state.texts[id]=input.value;
+        save();
+      }
+
+      task.appendChild(check);
+      task.appendChild(input);
+      lvl.appendChild(task);
+    }
+
+    container.appendChild(lvl);
+  });
+}
+
+function updateUI(){
+  document.getElementById("count").textContent = state.counter;
+  document.getElementById("streak").textContent = state.streak;
+  document.getElementById("xp").textContent = state.xp;
+
+  const percent = (state.xp % 50) * 2;
+  document.getElementById("bar").style.width = percent + "%";
+
+  renderAchievements();
+  render();
+}
+
+updateDaily();
+save();
+updateUI();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</body>
+</html>
