@@ -144,6 +144,7 @@ function updateDaily(){
     state.lastDate = today();
     const d = new Date().getDay();
     state.counter += (d===0 ? 7 : 3);
+    state.counter = 40;
   }
 }
 
