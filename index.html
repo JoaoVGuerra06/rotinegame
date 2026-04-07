@@ -94,7 +94,7 @@ input.task-text {
 <body>
 
 <div class="container">
-  <h1>🎮 Jornada do Herói</h1>
+  <h1>🎮 Jornada do Enem</h1>
 
   <div class="panel">Missões restantes: <b id="count"></b></div>
   <div class="panel">🔥 Streak: <b id="streak"></b></div>
@@ -109,14 +109,12 @@ input.task-text {
 
 <script>
 const levelNames = [
-"Aprendiz Perdido","Explorador do Caos","Caçador de Hábitos","Guardião da Disciplina","Mestre do Foco","Domador do Tempo","Guerreiro da Rotina","Estrategista Supremo","Lorde da Produtividade","Arquiteto do Dia",
-"Conquistador Mental","Sábio das Metas","Mago da Consistência","Titã do Progresso","General da Execução","Rei do Controle","Lenda Viva","Entidade do Hábito","Deus da Disciplina","Forma Final",
-"Renascido do Zero","Andarilho do Tempo","Executor Implacável","Mestre da Clareza","Forjador de Rotinas","Sentinela do Progresso","Comandante da Ordem","Dominador do Caos","Arquiteto Supremo","Visionário da Disciplina",
+"Aprendiz Perdido","Sentinela do Progresso","Comandante da Ordem","Dominador do Caos","Arquiteto Supremo","Visionário da Disciplina",
 "Ascendente Mental","Engenheiro do Foco","Guardião do Ritmo","Mestre da Persistência","Conquistador do Amanhã","Soberano da Consistência","Titã da Execução","Imperador da Rotina","Entidade Suprema","Dominador do ENEM"
 ];
 
 // imagens simples (pode trocar depois)
-const levelImages = Array.from({length:40}, (_,i)=>`https://picsum.photos/seed/${i}/60`);
+const levelImages = Array.from({length:16}, (_,i)=>`https://picsum.photos/seed/${i}/60`);
 
 const levelsData = levelNames.map((name,i)=>({ name, img: levelImages[i] }));
 
@@ -128,7 +126,7 @@ try {
 state = {
   tasks: state.tasks || {},
   texts: state.texts || {},
-  counter: state.counter || 40,
+  counter: state.counter || 0,
   lastDate: state.lastDate || null,
   streak: state.streak || 0,
   xp: state.xp || 0,
@@ -143,13 +141,13 @@ function updateDaily(){
     state.streak = (state.lastDate === y.toDateString()) ? state.streak+1 : 1;
     state.lastDate = today();
     const d = new Date().getDay();
-    state.counter += (d===0 ? 7 : 3);
+    state.counter += (d===0 ? 7 : 5);
   }
 }
 
 function save(){ localStorage.setItem("gameState", JSON.stringify(state)); }
 
-function tasksPerLevel(i){ return (i%2===0)?12:13 }
+function tasksPerLevel(i){ return (i%2===0)?26:26 }
 
 function isComplete(i){
   for(let t=0;t<tasksPerLevel(i);t++){
